@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA 綜合資訊看板</title>
+    <!-- Load React. -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Load Babel for JSX. -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Load Tailwind CSS. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 為了確保展示穩定性，使用預設的模擬資料
+        const MOCK_TEAMS = [
+            { id: 1, city: "Atlanta", name: "Hawks", abbreviation: "ATL", conference: "East", division: "Southeast" },
+            { id: 2, city: "Boston", name: "Celtics", abbreviation: "BOS", conference: "East", division: "Atlantic" },
+            { id: 3, city: "Brooklyn", name: "Nets", abbreviation: "BKN", conference: "East", division: "Atlantic" },
+            { id: 11, city: "Golden State", name: "Warriors", abbreviation: "GSW", conference: "West", division: "Pacific" },
+            { id: 14, city: "Los Angeles", name: "Lakers", abbreviation: "LAL", conference: "West", division: "Pacific" },
+            { id: 16, city: "Miami", name: "Heat", abbreviation: "MIA", conference: "East", division: "Southeast" },
+            { id: 21, city: "Oklahoma City", name: "Thunder", abbreviation: "OKC", conference: "West", division: "Northwest" },
+            { id: 24, city: "Phoenix", name: "Suns", abbreviation: "PHX", conference: "West", division: "Pacific" },
+            { id: 27, city: "San Antonio", name: "Spurs", abbreviation: "SAS", conference: "West", division: "Southwest" },
+            { id: 8, city: "Denver", name: "Nuggets", abbreviation: "DEN", conference: "West", division: "Northwest" },
+        ];
+
+        const MOCK_PLAYERS = [
+            { id: 1, first_name: "Stephen", last_name: "Curry", position: "G", height: "6'2\"", weight: "185 lbs", team_id: 11, points: 26.4, assists: 5.1 },
+            { id: 2, first_name: "LeBron", last_name: "James", position: "F", height: "6'9\"", weight: "250 lbs", team_id: 14, points: 25.7, assists: 8.3 },
+            { id: 3, first_name: "Kevin", last_name: "Durant", position: "F", height: "6'11\"", weight: "240 lbs", team_id: 24, points: 27.1, assists: 5.0 },
+            { id: 4, first_name: "Nikola", last_name: "Jokic", position: "C", height: "6'11\"", weight: "284 lbs", team_id: 8, points: 26.4, assists: 9.0 },
+            { id: 5, first_name: "Jayson", last_name: "Tatum", position: "F-G", height: "6'8\"", weight: "210 lbs", team_id: 2, points: 26.9, assists: 4.9 },
+            { id: 6, first_name: "Victor", last_name: "Wembanyama", position: "F-C", height: "7'4\"", weight: "210 lbs", team_id: 27, points: 21.4, assists: 3.9 },
+            { id: 7, first_name: "Shai", last_name: "Gilgeous-Alexander", position: "G", height: "6'6\"", weight: "195 lbs", team_id: 21, points: 30.1, assists: 6.2 },
+            { id: 8, first_name: "Jimmy", last_name: "Butler", position: "F", height: "6'7\"", weight: "230 lbs", team_id: 16, points: 20.8, assists: 5.0 },
+        ];
+
+        function App() {
+            // View state: 'teams' or 'players'
+            const [currentView, setCurrentView] = useState('teams');
+            
+            // Search state
+            const [searchQuery, setSearchQuery] = useState('');
+            const [filteredData, setFilteredData] = useState([]);
+
+            useEffect(() => {
+                let result = [];
+                const query = searchQuery.toLowerCase();
+
+                if (currentView === 'teams') {
+                    result = MOCK_TEAMS.filter(team => 
+                        team.name.toLowerCase().includes(query) || 
+                        team.city.toLowerCase().includes(query) ||
+                        team.abbreviation.toLowerCase().includes(query)
+                    );
+                } else {
+                    result = MOCK_PLAYERS.filter(player => 
+                        player.first_name.toLowerCase().includes(query) || 
+                        player.last_name.toLowerCase().includes(query)
+                    );
+                }
+                setFilteredData(result);
+            }, [searchQuery, currentView]);
+
+            // Helper to get team name by id
+            const getTeamName = (teamId) => {
+                const team = MOCK_TEAMS.find(t => t.id === teamId);
+                return team ? `${team.city} ${team.name}` : 'Unknown Team';
+            };
+
+            // Helper to get team logo color (mocking colors based on team name)
+            const getTeamColor = (teamName) => {
+                const colors = {
+                    'Lakers': 'bg-purple-600',
+                    'Warriors': 'bg-blue-600',
+                    'Celtics': 'bg-green-600',
+                    'Heat': 'bg-red-600',
+                    'Suns': 'bg-orange-500',
+                    'Nuggets': 'bg-blue-800',
+                    'Spurs': 'bg-gray-800',
+                    'Thunder': 'bg-blue-400',
+                    'Bulls': 'bg-red-600',
+                    'Knicks': 'bg-orange-600'
+                };
+                return colors[teamName] || 'bg-slate-700';
+            };
+
+            return (
+                <div className="min-h-screen">
+                    {/* Navigation / Header */}
+                    <nav className="bg-slate-900 text-white shadow-md sticky top-0 z-10">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-16">
+                                <div className="flex items-center gap-3">
+                                    <i className="fa-solid fa-basketball text-orange-500 text-2xl"></i>
+                                    <span className="font-bold text-xl tracking-wide">NBA Info Hub</span>
+                                </div>
+                                
+                                <div className="flex space-x-4">
+                                    <button 
+                                        onClick={() => {setCurrentView('teams'); setSearchQuery('');}}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'teams' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-slate-700 hover:text-white'}`}
+                                    >
+                                        <i className="fa-solid fa-users mr-2"></i>球隊列表
+                                    </button>
+                                    <button 
+                                        onClick={() => {setCurrentView('players'); setSearchQuery('');}}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'players' ? 'bg-orange-500 text-white' : 'text-gray-300 hover:bg-slate-700 hover:text-white'}`}
+                                    >
+                                        <i className="fa-solid fa-user mr-2"></i>球星資訊
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Main Content Area */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        
+                        {/* Info Banner */}
+                        <div className="mb-8 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md shadow-sm">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <i className="fa-solid fa-circle-info text-blue-500 mt-1"></i>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>資料說明：</strong> 此看板目前使用內建的精選模擬資料，以確保連線穩定性與展示流暢度。包含部分熱門球隊與知名球星的本季預估數據。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div className="mb-8 relative max-w-md mx-auto">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i className="fa-solid fa-magnifying-glass text-gray-400"></i>
+                            </div>
+                            <input
+                                type="text"
+                                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-full leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 sm:text-sm shadow-sm transition-shadow"
+                                placeholder={currentView === 'teams' ? "搜尋球隊名稱或城市 (例如: Lakers, Boston)..." : "搜尋球員名稱 (例如: Curry, LeBron)..."}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Title */}
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center border-b pb-2">
+                            {currentView === 'teams' ? (
+                                <><i className="fa-solid fa-map-location-dot mr-3 text-slate-600"></i>NBA 球隊總覽</>
+                            ) : (
+                                <><i className="fa-solid fa-star mr-3 text-yellow-500"></i>焦點球星資料</>
+                            )}
+                        </h2>
+
+                        {/* No Results State */}
+                        {filteredData.length === 0 && (
+                            <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-100">
+                                <i className="fa-regular fa-face-frown text-5xl text-gray-300 mb-4"></i>
+                                <h3 className="text-lg font-medium text-gray-900">找不到相符的結果</h3>
+                                <p className="mt-1 text-sm text-gray-500">嘗試使用不同的關鍵字搜尋。</p>
+                            </div>
+                        )}
+
+                        {}
+                        {/* Teams Grid */}
+                        {currentView === 'teams' && filteredData.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredData.map(team => (
+                                    <div key={team.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100 flex flex-col">
+                                        <div className={`h-24 ${getTeamColor(team.name)} flex items-center justify-center`}>
+                                            <span className="text-4xl font-black text-white/20 tracking-widest">{team.abbreviation}</span>
+                                        </div>
+                                        <div className="p-5 flex-grow relative">
+                                            {/* Badge for Logo placeholder */}
+                                            <div className="absolute -top-10 left-5 h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-md border-4 border-white">
+                                                <i className="fa-solid fa-basketball text-2xl text-gray-300"></i>
+                                            </div>
+                                            
+                                            <div className="mt-6">
+                                                <p className="text-sm text-gray-500 font-medium">{team.city}</p>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-4">{team.name}</h3>
+                                                
+                                                <div className="flex gap-2">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {team.conference}ern Conf.
+                                                    </span>
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                        {team.division} Div.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {}
+                        {/* Players Grid */}
+                        {currentView === 'players' && filteredData.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {filteredData.map(player => (
+                                    <div key={player.id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-shadow border border-gray-100 overflow-hidden group">
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <p className="text-sm text-gray-500">{player.first_name}</p>
+                                                    <h3 className="text-lg font-bold text-gray-900 leading-tight">{player.last_name}</h3>
+                                                </div>
+                                                <span className="bg-slate-100 text-slate-800 text-xs font-bold px-2 py-1 rounded">
+                                                    {player.position}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="mb-4">
+                                                <p className="text-sm font-semibold text-orange-600">
+                                                    <i className="fa-solid fa-shield-halved mr-1"></i> {getTeamName(player.team_id)}
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 py-3 border-t border-b border-gray-50 mb-4">
+                                                <div>
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wider">Height</p>
+                                                    <p className="text-sm font-medium text-gray-800">{player.height}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wider">Weight</p>
+                                                    <p className="text-sm font-medium text-gray-800">{player.weight}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-2 gap-2 text-center">
+                                                <div>
+                                                    <p className="text-xl font-bold text-gray-900">{player.points}</p>
+                                                    <p className="text-xs text-gray-500 font-medium">PTS</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xl font-bold text-gray-900">{player.assists}</p>
+                                                    <p className="text-xs text-gray-500 font-medium">AST</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+                    
+                    {/* Footer */}
+                    <footer className="bg-slate-900 py-6 mt-12 border-t border-slate-800 text-center">
+                        <p className="text-slate-400 text-sm">
+                            <i className="fa-solid fa-code text-orange-500 mr-2"></i>
+                            Built with React & Tailwind CSS
+                        </p>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
